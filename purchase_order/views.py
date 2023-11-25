@@ -6,11 +6,11 @@ from datetime import datetime
 import pytz
 
 
-# Purchase Order API Endpoint Class Based View
-class Purchase(APIView):
+# Purchase Orders API Endpoint Class Based View
+class Purchases(APIView):
     # creating a new Purchase Order
     def post(self, request):
-        serializer = PurchaseSerializer(data=request.data)
+        serializer = PurchaseSerializer(data=request.data, context={"request": request})
         if serializer.is_valid():
             serializer.save()
             return Response(serializer.data, status=status.HTTP_201_CREATED)
@@ -19,19 +19,24 @@ class Purchase(APIView):
     # getting all Purchase Orders
     def get(self, request):
         orders = PurchaseOrderModel.objects.all()
-        serializer = PurchaseSerializer(orders, many=True)
+        serializer = PurchaseSerializer(orders, many=True, context={"request": request})
         return Response(serializer.data, status=status.HTTP_200_OK)
 
+
+# Purchase Order API Endpoint Class Based View
+class Purchase(APIView):
     # getting a single Purchase Order using the Purchase Order id
     def get(self, request, id):
-        order = PurchaseOrderModel.objects.get(id)
-        serializer = PurchaseSerializer(order)
+        order = PurchaseOrderModel.objects.get(pk=id)
+        serializer = PurchaseSerializer(order, context={"request": request})
         return Response(serializer.data, status=status.HTTP_200_OK)
 
     # updating a single Purchase Order data using the Purchase Order id
     def put(self, request, id):
-        order = PurchaseOrderModel.objects.get(id)
-        serializer = PurchaseSerializer(order, data=request.data)
+        order = PurchaseOrderModel.objects.get(pk=id)
+        serializer = PurchaseSerializer(
+            order, data=request.data, context={"request": request}
+        )
         if serializer.is_valid():
             serializer.save()
             return Response(serializer.data, status=status.HTTP_201_CREATED)
@@ -39,7 +44,7 @@ class Purchase(APIView):
 
     # deleting a single Purchase Order using the Purchase Order id
     def delete(self, request, id):
-        order = PurchaseOrderModel.objects.get(id)
+        order = PurchaseOrderModel.objects.get(pk=id)
         order.delete()
         return Response(status=status.HTTP_200_OK)
 
@@ -49,13 +54,15 @@ class Purchase_filter(APIView):
     # getting all Purchase Orders associated with a vendor id
     def get(self, request, v_id):
         orders = PurchaseOrderModel.objects.filter(vendor=v_id)
-        serializer = PurchaseSerializer(orders, many=True)
+        serializer = PurchaseSerializer(orders, many=True, context={"request": request})
         return Response(serializer.data, status=status.HTTP_200_OK)
 
 
 # Purchase Order Acknowledgement API Endpoint Class Based View
 class Purchase_Acknowledgement(APIView):
-    def post(self, request, id):
-        order = PurchaseOrderModel.objects.get(id)
+    def post(self, request, id, format="JSON"):
+        order = PurchaseOrderModel.objects.get(pk=id)
         order.acknowledgement_date = datetime.now(tz=pytz.utc)
         order.save()
+        serializer = PurchaseSerializer(order)
+        return Response(serializer.data, status=status.HTTP_200_OK)
